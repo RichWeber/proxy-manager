@@ -33,6 +33,7 @@ class PublicScopeSimulator
      *                                              to read the property. `$this` if none provided
      * @param string|null       $returnPropertyName name of the property to which we want to assign the result of
      *                                              the operation. Return directly if none provided
+     * @param string|null       $interfaceName      name of the proxified interface if any
      *
      * @throws InvalidArgumentException
      */
@@ -41,7 +42,8 @@ class PublicScopeSimulator
         string $nameParameter,
         ?string $valueParameter = null,
         ?PropertyGenerator $valueHolder = null,
-        ?string $returnPropertyName = null
+        ?string $returnPropertyName = null,
+        ?string $interfaceName = null
     ): string {
         $byRef  = self::getByRefReturnValue($operationType);
         $value  = $operationType === self::OPERATION_SET ? ', $value' : '';
@@ -49,6 +51,12 @@ class PublicScopeSimulator
 
         if ($valueHolder) {
             $target = '$this->' . $valueHolder->getName();
+        }
+
+        if (null !== $interfaceName) {
+            return '$targetObject = ' . $target . ';' . "\n\n"
+                . self::getUndefinedPropertyNotice($operationType, $nameParameter, $interfaceName)
+                . self::getOperation($operationType, $nameParameter, $valueParameter);
         }
 
         return '$realInstanceReflection = new \\ReflectionClass(get_parent_class($this));' . "\n\n"
@@ -73,23 +81,29 @@ class PublicScopeSimulator
     /**
      * This will generate code that triggers a notice if access is attempted on a non-existing property
      */
-    private static function getUndefinedPropertyNotice(string $operationType, string $nameParameter): string
+    private static function getUndefinedPropertyNotice(string $operationType, string $nameParameter, string $interfaceName = null): string
     {
         if ($operationType !== self::OPERATION_GET) {
             return '';
         }
 
-        return '    $backtrace = debug_backtrace(false, 1);' . "\n"
+        $code = '    $backtrace = debug_backtrace(false, 1);' . "\n"
             . '    trigger_error(' . "\n"
             . '        sprintf(' . "\n"
             . '            \'Undefined property: %s::$%s in %s on line %s\',' . "\n"
-            . '            get_parent_class($this),' . "\n"
+            . '            ' . (null !== $interfaceName ? var_export($interfaceName, true) : 'get_parent_class($this)') . ',' . "\n"
             . '            $' . $nameParameter . ',' . "\n"
             . '            $backtrace[0][\'file\'],' . "\n"
             . '            $backtrace[0][\'line\']' . "\n"
             . '        ),' . "\n"
             . '        \E_USER_NOTICE' . "\n"
             . '    );' . "\n";
+
+        if (null !== $interfaceName) {
+            $code = str_replace("\n    ", "\n", substr($code, 4));
+        }
+
+        return $code;
     }
 
     /**
