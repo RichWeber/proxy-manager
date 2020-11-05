@@ -34,7 +34,11 @@ final class Version
      */
     public static function getVersion(): string
     {
-        return InstalledVersions::getPrettyVersion('ocramius/proxy-manager')
-            . '@' . InstalledVersions::getReference('ocramius/proxy-manager');
+        if (!class_exists(InstalledVersions::class)) {
+            return '2.99.99@suimarco';
+        }
+
+        return InstalledVersions::getPrettyVersion('suimarco/proxy-manager')
+            . '@' . InstalledVersions::getReference('suimarco/proxy-manager');
     }
 }
