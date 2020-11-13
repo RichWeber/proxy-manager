@@ -7,6 +7,7 @@ By using this package, you'll gain a versioning policy that won't force you to
 use the latest version of PHP *and* Composer to get bugfixes and new features.
 
 This fork:
+
 - maintains compatibility with PHP `>=7.1`;
   supporting new versions of PHP is considered as a bugfix;
 - won't bump the minimum supported version of PHP in a minor release;
